@@ -10,14 +10,42 @@ namespace GameEventAnalytics
     public class Event
     {
         public int Id { get; set; }
-        public Dictionary<string, string> EventParameters { get; set; }
+        // В XML сериализации не поддерживается Dictionary
+        public List<EventKeyValuePair> EventParameters { get; set; }
 
-        public Event(int id) : this(id, parameters: null) {}
+        public Event() : this(0, new Dictionary<string, string>()) {}
+
+        public Event(int id) : this(id, new Dictionary<string, string>()) {}
 
         public Event(int id, Dictionary<string, string> parameters)
         {
             Id = id;
-            EventParameters = parameters;
+            EventParameters = parameters.Select(x => new EventKeyValuePair(x.Key, x.Value)).ToList();
+        }
+
+        public void AddEvent(string key, string value)
+        {
+            EventParameters.Add(new EventKeyValuePair(key, value));
+        }
+    }
+    //Special for XML
+    [Serializable]
+    public class EventKeyValuePair
+    {
+        public string Key { get; set; }
+        public string Value { get; set; }
+
+        public EventKeyValuePair() : this(null, null) { }
+
+        public EventKeyValuePair(string key, string value)
+        {
+            Key = key;
+            Value = value;
+        }
+
+        public override string ToString()
+        {
+            return $"{Key}:{Value}";
         }
     }
 }
