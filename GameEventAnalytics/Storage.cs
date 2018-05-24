@@ -8,18 +8,37 @@ using System.Net;
 
 namespace GameEventAnalytics
 {
+    /// <summary>
+    /// The class that stores and transfers to the server information about the game events
+    /// </summary>
+    /// <typeparam name="T">Type of serializer</typeparam>
     public class EventManager<T> where T : Serializer<Event>
     {
+        /// <summary>
+        /// Full path to the file where events will be stored
+        /// </summary>
         public string FullPath { get; private set; }
+        /// <summary>
+        /// Uri of the analytics server
+        /// </summary>
         public Uri ServerUri { get; set; }
 
         private Serializer<Event> serializer = SerializerFactory<T, Event>.GetSerializer();
+        /// <summary>
+        /// Temporary storage of events
+        /// </summary>
         private List<Event> buffer = new List<Event>();
 
         private const int MIN_FLUSH_NUMBER = 2;
         private const int MIN_EVENT_NUMBER_TO_SEND = 4;
         private const int MAX_EVENT_COUNT_TO_STORE = 10;
 
+        /// <summary>
+        /// Initializes a manager of event, that will store the events in file with specified name 
+        /// and transmit them to server with specified Uri
+        /// </summary>
+        /// <param name="filename">Name of file</param>
+        /// <param name="serverUri">Uri of server</param>
         public EventManager(string filename, Uri serverUri){
             string extension = null;
 
@@ -41,6 +60,10 @@ namespace GameEventAnalytics
             ServerUri = serverUri;
         }
 
+        /// <summary>
+        /// Adds event to the buffer. If it's full, manager stores them in the file
+        /// </summary>
+        /// <param name="currEvent">New event</param>
         public void AddEvent(Event currEvent)
         {
             if (buffer.Count >= MIN_FLUSH_NUMBER)
@@ -50,6 +73,9 @@ namespace GameEventAnalytics
             buffer.Add(currEvent);
         }
 
+        /// <summary>
+        /// Clears the buffer and stores the events in the file
+        /// </summary>
         public void Flush()
         {
             if (!File.Exists(FullPath))
@@ -71,6 +97,7 @@ namespace GameEventAnalytics
                         eventList.AddRange(buffer);
                         buffer.Clear();
 
+                        // Manager removes old events to store new ones
                         if (fileCount >= MAX_EVENT_COUNT_TO_STORE)
                             eventList.RemoveRange(0, fileCount - MAX_EVENT_COUNT_TO_STORE);
 
@@ -98,6 +125,9 @@ namespace GameEventAnalytics
                 SendToServer();
         }
 
+        /// <summary>
+        /// Tries to send the event information to the server
+        /// </summary>
         public void SendToServer()
         {
             bool isAvailable = IsInternetConnectionAvailable();
@@ -127,6 +157,10 @@ namespace GameEventAnalytics
              CreateNew();
         }
 
+        /// <summary>
+        /// Checks if there is a connection with the specified server
+        /// </summary>
+        /// <returns>State of connection</returns>
         private bool IsInternetConnectionAvailable()
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(ServerUri);
@@ -146,6 +180,9 @@ namespace GameEventAnalytics
             return false;
         }
 
+        /// <summary>
+        /// Creates a new directory where files with event infomation will be stored
+        /// </summary>
         private void CreateNew()
         {
             if (!Directory.Exists("../Analytics"))
